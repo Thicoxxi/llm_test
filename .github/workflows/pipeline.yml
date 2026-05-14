@@ -1,34 +1,28 @@
-name: CI
-
+name: .NET Core 8 Build, Test and Publish
 on:
   push:
-
+    branches:
+      - main
 jobs:
-
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-
-      - run: |
-          docker build -t $DOCKER_IMAGE .
-          docker tag $DOCKER_IMAGE $CI_REGISTRY_IMAGE/$DOCKER_IMAGE:$DOCKER_TAG
-
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: |
-          docker run $CI_REGISTRY_IMAGE/$DOCKER_IMAGE:$DOCKER_TAG /bin/true
-
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - run: |
-          docker push $CI_REGISTRY_IMAGE/$DOCKER_IMAGE:$DOCKER_TAG
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup .NET Core 8
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore NuGet packages
+        run: dotnet restore
+      - name: Build
+        run: dotnet build -c Release
+      - name: Test
+        run: dotnet test -c Release
+      - name: Publish
+        run: dotnet publish -c Release -o ./publish
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: publish
+          path: ./publish
